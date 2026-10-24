@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\ShopSystem.Application\ShopSystem.Application.csproj" />
+    <ProjectReference Include="..\ShopSystem.Core\ShopSystem.Core.csproj" />
+  </ItemGroup>
+</Project>
+
