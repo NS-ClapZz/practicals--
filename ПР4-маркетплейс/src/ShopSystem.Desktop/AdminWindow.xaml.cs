@@ -63,7 +63,8 @@ public partial class AdminWindow : Window
     private void ProductSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         _selectedProduct = ProductsGrid.SelectedItem as AdminProduct;
-        if (_selectedProduct is not { } p) return;
+        if (_selectedProduct == null) return;
+        var p = _selectedProduct;
         ProductNameBox.Text = p.Name; ProductDescriptionBox.Text = p.Description; ProductPriceBox.Text = p.Price.ToString(CultureInfo.InvariantCulture);
         ProductImageBox.Text = p.ImagePath; ProductStockBox.Text = p.Stock.ToString(CultureInfo.InvariantCulture);
         ProductCategoryIdBox.Text = p.CategoryId.ToString(); ProductAvailableBox.IsChecked = p.IsAvailable;

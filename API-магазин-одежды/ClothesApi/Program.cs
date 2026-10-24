@@ -300,7 +300,6 @@ app.Run();
 
 static int UserId(ClaimsPrincipal u) => int.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-// DTOs
 public record RegisterDto(string Login, string Password, string Phone, string? Address);
 public record LoginDto(string Login, string Password);
 public record OrderDto(List<OrderItemDto> Items);
@@ -309,7 +308,6 @@ public record StatusDto(string Status);
 public record StockDto(int Stock);
 public record AvailabilityDto(bool IsAvailable);
 
-// Entities
 public class Customer
 {
     public int Id { get; set; }

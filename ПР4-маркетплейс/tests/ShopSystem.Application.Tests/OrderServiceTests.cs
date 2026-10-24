@@ -9,14 +9,14 @@ public sealed class OrderServiceTests
     public void CreateOrder_WithKnownProducts_CalculatesTotalAndSavesOrder()
     {
         var repository = new FakeShopRepository();
-        repository.AddProduct(new Product { Id = 1, Name = "Keyboard", Price = 120m });
-        repository.AddProduct(new Product { Id = 2, Name = "Mouse", Price = 50m });
+        repository.AddProduct(new Product { Id = 1, Name = "Клавиатура", Price = 1200m });
+        repository.AddProduct(new Product { Id = 2, Name = "Мышь", Price = 500m });
         var service = new OrderService(repository);
 
-        var order = service.CreateOrder("  Ivan Petrov  ", [1, 2]);
+        var order = service.CreateOrder("  Иван Петров  ", [1, 2]);
 
-        Assert.Equal("Ivan Petrov", order.CustomerName);
-        Assert.Equal(170m, order.TotalAmount);
+        Assert.Equal("Иван Петров", order.CustomerName);
+        Assert.Equal(1700m, order.TotalAmount);
         Assert.Single(repository.Orders);
     }
 
@@ -25,7 +25,6 @@ public sealed class OrderServiceTests
     {
         var service = new OrderService(new FakeShopRepository());
 
-        Assert.Throws<InvalidOperationException>(() => service.CreateOrder("Ivan", [999]));
+        Assert.Throws<InvalidOperationException>(() => service.CreateOrder("Иван", [999]));
     }
 }
-

@@ -9,11 +9,11 @@ public sealed class ProductServiceTests
     public void AddProduct_WhenPriceIsNegative_ThrowsArgumentException()
     {
         var service = new ProductService(new FakeShopRepository());
-        var product = new Product { Id = 1, Name = "Broken product", Price = -1m };
+        var product = new Product { Id = 1, Name = "Товар", Price = -10m };
 
         var exception = Assert.Throws<ArgumentException>(() => service.AddProduct(product));
 
-        Assert.Contains("price", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Цена", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -21,10 +21,9 @@ public sealed class ProductServiceTests
     {
         var repository = new FakeShopRepository();
         var service = new ProductService(repository);
-        service.AddProduct(new Product { Id = 1, Name = "Keyboard", Price = 100m });
+        service.AddProduct(new Product { Id = 1, Name = "Клавиатура", Price = 1500m });
 
         Assert.Throws<InvalidOperationException>(() =>
-            service.AddProduct(new Product { Id = 1, Name = "Mouse", Price = 50m }));
+            service.AddProduct(new Product { Id = 1, Name = "Мышь", Price = 800m }));
     }
 }
-

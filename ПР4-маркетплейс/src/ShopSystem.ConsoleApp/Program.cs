@@ -13,19 +13,19 @@ var orderService = new OrderService(repository);
 productService.AddProduct(new Product
 {
     Id = 1,
-    Name = "Mechanical Keyboard",
+    Name = "Механическая клавиатура",
     Price = 12990m
 });
 
 productService.AddProduct(new Product
 {
     Id = 2,
-    Name = "Wireless Mouse",
+    Name = "Беспроводная мышь",
     Price = 4990m
 });
 
-Console.WriteLine("=== ShopSystem ===");
-Console.WriteLine("Products:");
+Console.WriteLine("=== Каталог ShopSystem ===");
+Console.WriteLine("Список товаров:");
 
 foreach (var product in productService.GetProducts())
 {
@@ -33,9 +33,9 @@ foreach (var product in productService.GetProducts())
 }
 
 var order = orderService.CreateOrder(
-    customerName: "Ivan Petrov",
+    customerName: "Иван Петров",
     productIds: [1, 2]);
 
 Console.WriteLine();
-Console.WriteLine($"Order #{order.Id} for {order.CustomerName}");
-Console.WriteLine($"Total: {order.TotalAmount} ₽");
+Console.WriteLine($"Заказ №{order.Id} (покупатель: {order.CustomerName})");
+Console.WriteLine($"Итого к оплате: {order.TotalAmount} ₽");

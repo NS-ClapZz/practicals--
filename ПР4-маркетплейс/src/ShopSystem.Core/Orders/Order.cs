@@ -10,6 +10,6 @@ public sealed class Order
 
     public IReadOnlyCollection<Product> Products { get; init; } = Array.Empty<Product>();
 
-    public decimal TotalAmount => Products.Sum(product => product.Price);
+    public decimal TotalAmount => Products.Sum(p => p.Price);
 }
 

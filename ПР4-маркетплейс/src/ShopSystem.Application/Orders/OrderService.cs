@@ -9,19 +9,19 @@ public sealed class OrderService(IShopRepository repository)
     {
         if (string.IsNullOrWhiteSpace(customerName))
         {
-            throw new ArgumentException("Customer name is required.", nameof(customerName));
+            throw new ArgumentException("Имя покупателя обязательно для заполнения.", nameof(customerName));
         }
 
         ArgumentNullException.ThrowIfNull(productIds);
 
         var requestedProductIds = productIds.ToHashSet();
         var selectedProducts = repository.Products
-            .Where(product => requestedProductIds.Contains(product.Id))
+            .Where(p => requestedProductIds.Contains(p.Id))
             .ToArray();
 
         if (selectedProducts.Length == 0)
         {
-            throw new InvalidOperationException("Order must contain at least one product.");
+            throw new InvalidOperationException("Заказ должен содержать хотя бы один существующий товар.");
         }
 
         var order = new Order
@@ -35,4 +35,3 @@ public sealed class OrderService(IShopRepository repository)
         return order;
     }
 }
-

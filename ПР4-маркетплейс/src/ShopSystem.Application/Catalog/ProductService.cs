@@ -13,25 +13,24 @@ public sealed class ProductService(IShopRepository repository)
 
         if (product.Id <= 0)
         {
-            throw new ArgumentException("Product ID must be positive.", nameof(product));
+            throw new ArgumentException("Идентификатор товара должен быть положительным числом.", nameof(product));
         }
 
         if (string.IsNullOrWhiteSpace(product.Name))
         {
-            throw new ArgumentException("Product name is required.", nameof(product));
+            throw new ArgumentException("Название товара обязательно для заполнения.", nameof(product));
         }
 
         if (product.Price < 0)
         {
-            throw new ArgumentException("Product price cannot be negative.", nameof(product));
+            throw new ArgumentException("Цена товара не может быть отрицательной.", nameof(product));
         }
 
-        if (repository.Products.Any(existingProduct => existingProduct.Id == product.Id))
+        if (repository.Products.Any(p => p.Id == product.Id))
         {
-            throw new InvalidOperationException($"Product with ID {product.Id} already exists.");
+            throw new InvalidOperationException($"Товар с идентификатором {product.Id} уже существует.");
         }
 
         repository.AddProduct(product);
     }
 }
-
