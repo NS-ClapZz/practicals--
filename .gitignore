@@ -1,0 +1,25 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+artifacts/
+TestResults/
+
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Database and logs
+*.db
+*.sqlite
+*.log
+*.tmp
+
+# OS files
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
