@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var dbPath = builder.Configuration["CLOTHES_DB"] ?? "clothes.db";
+var allowedOrderStatuses = new[] { "New", "Processing", "Completed", "Cancelled" };
 
 builder.Services.AddDbContext<ClothesDb>(o => o.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddScoped<IPasswordHasher<Customer>, PasswordHasher<Customer>>();
@@ -109,9 +110,10 @@ app.MapGet("/api/clothing", async (ClothesDb db, string? search) =>
     }).ToList());
 });
 
-app.MapPost("/api/users/register", async (RegisterDto dto, ClothesDb db, IPasswordHasher<Customer> hasher) =>
+app.MapPost("/api/users/register", async (RegisterDto? dto, ClothesDb db, IPasswordHasher<Customer> hasher) =>
 {
-    if (string.IsNullOrWhiteSpace(dto.Login) || dto.Password.Length < 8 || string.IsNullOrWhiteSpace(dto.Phone))
+    if (dto is null || string.IsNullOrWhiteSpace(dto.Login) || string.IsNullOrWhiteSpace(dto.Password) ||
+        dto.Password.Length < 8 || string.IsNullOrWhiteSpace(dto.Phone))
     {
         return Results.BadRequest(new { error = "Укажите логин и телефон; пароль должен быть не короче 8 символов." });
     }
@@ -136,8 +138,13 @@ app.MapPost("/api/users/register", async (RegisterDto dto, ClothesDb db, IPasswo
     return Results.Created($"/api/users/{user.Id}", new { user.Id, user.Login, user.Role });
 });
 
-app.MapPost("/api/auth/login", async (LoginDto dto, ClothesDb db, IPasswordHasher<Customer> hasher, HttpContext ctx) =>
+app.MapPost("/api/auth/login", async (LoginDto? dto, ClothesDb db, IPasswordHasher<Customer> hasher, HttpContext ctx) =>
 {
+    if (dto is null || string.IsNullOrWhiteSpace(dto.Login) || string.IsNullOrWhiteSpace(dto.Password))
+    {
+        return Results.Unauthorized();
+    }
+
     var user = await db.Customers.SingleOrDefaultAsync(x => x.Login == dto.Login.Trim());
     if (user is null || hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password) == PasswordVerificationResult.Failed)
     {
@@ -162,7 +169,7 @@ app.MapPost("/api/auth/logout", async (HttpContext c) =>
     return Results.NoContent();
 }).RequireAuthorization();
 
-app.MapPost("/api/orders", async (OrderDto dto, ClaimsPrincipal principal, ClothesDb db) =>
+app.MapPost("/api/orders", async (OrderDto? dto, ClaimsPrincipal principal, ClothesDb db) =>
 {
     var uid = UserId(principal);
     var customer = await db.Customers.FindAsync(uid);
@@ -171,9 +178,15 @@ app.MapPost("/api/orders", async (OrderDto dto, ClaimsPrincipal principal, Cloth
         return Results.Unauthorized();
     }
 
-    if (dto.Items.Count == 0)
+    if (dto?.Items is not { Count: > 0 } requestedItems || requestedItems.Any(item => item is null))
     {
         return Results.BadRequest(new { error = "Заказ должен содержать товары." });
+    }
+
+    var items = requestedItems.Select(item => item!).ToArray();
+    if (items.Any(item => item.Quantity < 1))
+    {
+        return Results.BadRequest(new { error = "Количество должно быть положительным." });
     }
 
     await using var tx = await db.Database.BeginTransactionAsync();
@@ -184,13 +197,8 @@ app.MapPost("/api/orders", async (OrderDto dto, ClaimsPrincipal principal, Cloth
         CustomerId = uid
     };
 
-    foreach (var item in dto.Items)
+    foreach (var item in items)
     {
-        if (item.Quantity < 1)
-        {
-            return Results.BadRequest(new { error = "Количество должно быть положительным." });
-        }
-
         var stock = await db.Sizes.SingleOrDefaultAsync(s => s.Id == item.SizeId);
         if (stock is null || stock.Stock < item.Quantity || !await db.Clothes.AnyAsync(c => c.Id == stock.ClothingId && c.IsAvailable))
         {
@@ -252,46 +260,59 @@ app.MapGet("/api/orders", async (ClaimsPrincipal u, ClothesDb db, string? status
     }).ToListAsync());
 }).RequireAuthorization();
 
-app.MapPatch("/api/manager/orders/{id:int}/status", async (int id, StatusDto dto, ClothesDb db) =>
+app.MapPatch("/api/manager/orders/{id:int}/status", async (int id, StatusDto? dto, ClothesDb db) =>
 {
+    var requestedStatus = dto?.Status?.Trim();
+    var status = allowedOrderStatuses.FirstOrDefault(value =>
+        string.Equals(value, requestedStatus, StringComparison.OrdinalIgnoreCase));
+    if (status is null)
+    {
+        return Results.BadRequest(new { error = "Допустимые статусы: New, Processing, Completed, Cancelled." });
+    }
+
     var order = await db.Orders.FindAsync(id);
     if (order is null)
     {
         return Results.NotFound();
     }
 
-    order.Status = dto.Status.Trim();
+    order.Status = status;
     await db.SaveChangesAsync();
     return Results.Ok(new { order.Id, order.Status });
 }).RequireAuthorization(p => p.RequireRole("Manager"));
 
-app.MapPatch("/api/manager/sizes/{id:int}/stock", async (int id, StockDto dto, ClothesDb db) =>
+app.MapPatch("/api/manager/sizes/{id:int}/stock", async (int id, StockDto? dto, ClothesDb db) =>
 {
+    if (dto?.Stock is not int stockCount || stockCount < 0)
+    {
+        return Results.BadRequest(new { error = "Количество товара не может быть отрицательным и обязательно для передачи." });
+    }
+
     var size = await db.Sizes.FindAsync(id);
     if (size is null)
     {
         return Results.NotFound();
     }
 
-    if (dto.Stock < 0)
-    {
-        return Results.BadRequest();
-    }
-
-    size.Stock = dto.Stock;
+    size.Stock = stockCount;
     await db.SaveChangesAsync();
     return Results.Ok(new { size.Id, size.Stock });
 }).RequireAuthorization(p => p.RequireRole("Manager"));
 
-app.MapPatch("/api/manager/clothing/{id:int}/availability", async (int id, AvailabilityDto dto, ClothesDb db) =>
+app.MapPatch("/api/manager/clothing/{id:int}/availability", async (int id, AvailabilityDto? dto, ClothesDb db) =>
 {
+    if (dto?.IsAvailable is not bool isAvailable)
+    {
+        return Results.BadRequest(new { error = "Передайте новое значение доступности товара." });
+    }
+
     var item = await db.Clothes.FindAsync(id);
     if (item is null)
     {
         return Results.NotFound();
     }
 
-    item.IsAvailable = dto.IsAvailable;
+    item.IsAvailable = isAvailable;
     await db.SaveChangesAsync();
     return Results.Ok(new { item.Id, item.IsAvailable });
 }).RequireAuthorization(p => p.RequireRole("Manager"));
@@ -300,14 +321,16 @@ app.Run();
 
 static int UserId(ClaimsPrincipal u) => int.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-public record RegisterDto(string Login, string Password, string Phone, string? Address);
-public record LoginDto(string Login, string Password);
-public record OrderDto(List<OrderItemDto> Items);
+// DTOs
+public record RegisterDto(string? Login, string? Password, string? Phone, string? Address);
+public record LoginDto(string? Login, string? Password);
+public record OrderDto(List<OrderItemDto?>? Items);
 public record OrderItemDto(int SizeId, int Quantity);
-public record StatusDto(string Status);
-public record StockDto(int Stock);
-public record AvailabilityDto(bool IsAvailable);
+public record StatusDto(string? Status);
+public record StockDto(int? Stock);
+public record AvailabilityDto(bool? IsAvailable);
 
+// Entities
 public class Customer
 {
     public int Id { get; set; }
