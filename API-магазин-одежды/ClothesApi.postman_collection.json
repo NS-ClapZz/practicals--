@@ -1,0 +1,354 @@
+{
+  "info": {
+    "name": "Clothes API PR3",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "customerCookie",
+      "value": ""
+    },
+    {
+      "key": "managerCookie",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/health"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Health returns 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Health status is ok\", function () { pm.expect(pm.response.json().status).to.eql(\"ok\"); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/clothing"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Catalog returns 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Catalog has seeded items\", function () { pm.expect(pm.response.json()).to.be.an(\"array\").that.is.not.empty; });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Search clothing",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/clothing?search=футболка"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Search returns 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Search finds the shirt\", function () { pm.expect(pm.response.json().some(x => x.name.includes(\"Футболка\"))).to.eql(true); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Register customer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"login\":\"{{customerLogin}}\",\"password\":\"ChangeMe123\",\"phone\":\"+70000000000\",\"address\":\"Москва\"}"
+        },
+        "url": "{{baseUrl}}/api/users/register"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set(\"customerLogin\", \"demo-\" + Date.now());"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "prerequest"
+        },
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Customer registration returns 201\", function () { pm.response.to.have.status(201); });",
+              "pm.test(\"Registered role is Customer\", function () { pm.expect(pm.response.json().role).to.eql(\"Customer\"); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Login customer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"login\":\"{{customerLogin}}\",\"password\":\"ChangeMe123\"}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Customer login returns 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Customer role is Customer\", function () { pm.expect(pm.response.json().role).to.eql(\"Customer\"); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Create order (use sizeId from catalog)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"items\":[{\"sizeId\":1,\"quantity\":1}] }"
+        },
+        "url": "{{baseUrl}}/api/orders"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Order creation returns 201\", function () { pm.response.to.have.status(201); });",
+              "pm.test(\"Created order has an id\", function () { const body = pm.response.json(); pm.expect(body.id).to.be.a(\"number\"); pm.collectionVariables.set(\"createdOrderId\", body.id); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "My orders",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/orders"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Orders return 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Created order is in my orders\", function () { pm.expect(pm.response.json().some(x => String(x.id) === String(pm.collectionVariables.get(\"createdOrderId\")))).to.eql(true); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Orders by status",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/orders?status=New"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Filtered orders return 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"New-order filter contains the created order\", function () { pm.expect(pm.response.json().length).to.be.greaterThan(0); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Manager login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"login\":\"manager\",\"password\":\"{{managerPassword}}\"}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Manager login returns 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Manager role is Manager\", function () { pm.expect(pm.response.json().role).to.eql(\"Manager\"); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Manager change order status (use order id)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"Processing\"}"
+        },
+        "url": "{{baseUrl}}/api/manager/orders/{{createdOrderId}}/status"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Manager changes order status\", function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql(\"Processing\"); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Manager update size stock (use size id)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"stock\":20}"
+        },
+        "url": "{{baseUrl}}/api/manager/sizes/1/stock"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Manager updates stock\", function () { pm.response.to.have.status(200); pm.expect(pm.response.json().stock).to.eql(20); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Manager remove clothing from sale",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"isAvailable\":false}"
+        },
+        "url": "{{baseUrl}}/api/manager/clothing/1/availability"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Manager removes item from sale\", function () { pm.response.to.have.status(200); pm.expect(pm.response.json().isAvailable).to.eql(false); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    },
+    {
+      "name": "Manager return clothing to sale",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"isAvailable\":true}"
+        },
+        "url": "{{baseUrl}}/api/manager/clothing/1/availability"
+      },
+      "event": [
+        {
+          "script": {
+            "exec": [
+              "pm.test(\"Manager returns item to sale\", function () { pm.response.to.have.status(200); pm.expect(pm.response.json().isAvailable).to.eql(true); });"
+            ],
+            "type": "text/javascript"
+          },
+          "listen": "test"
+        }
+      ]
+    }
+  ]
+}
