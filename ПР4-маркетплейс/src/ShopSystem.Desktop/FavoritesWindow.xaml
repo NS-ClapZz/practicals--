@@ -1,0 +1,15 @@
+<Window x:Class="ShopSystem.Desktop.FavoritesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Избранное" Height="460" Width="650" MinHeight="320" MinWidth="480">
+    <Grid Margin="14">
+        <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <ListBox x:Name="FavoritesList" Grid.Row="0" DisplayMemberPath="DisplayName" />
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10">
+            <Button Content="Перенести выбранное в корзину" Click="MoveToCart_Click" Margin="4" Padding="10,5" />
+            <Button Content="Удалить из избранного" Click="Remove_Click" Margin="4" Padding="10,5" />
+            <Button Content="Обновить" Click="Refresh_Click" Margin="4" Padding="10,5" />
+        </StackPanel>
+        <TextBlock x:Name="StatusText" Grid.Row="2" Margin="4" />
+    </Grid>
+</Window>

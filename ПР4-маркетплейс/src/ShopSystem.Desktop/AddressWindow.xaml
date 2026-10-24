@@ -1,0 +1,3 @@
+<Window x:Class="ShopSystem.Desktop.AddressWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Адрес доставки" Height="180" Width="420" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <StackPanel Margin="20"><TextBlock Text="Укажите адрес доставки" FontSize="18"/><TextBox x:Name="AddressBox" Margin="0,12"/><Button Content="Продолжить" Click="Submit_Click" HorizontalAlignment="Right"/></StackPanel>
+</Window>
